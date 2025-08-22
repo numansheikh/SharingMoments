@@ -106,12 +106,17 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
       
       if (newAuthState && !wasAuthenticated) {
         _initializeDriveService();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully connected to Google Drive!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // Use a post-frame callback to ensure context is available
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Successfully connected to Google Drive!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        });
       }
     }
   }
@@ -827,69 +832,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 ),
               const SizedBox(height: 16),
 
-              // Update URL Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    if (sharedFolderUrl.isNotEmpty && _folderConfigService != null) {
-                      try {
-                        await _folderConfigService!.setSharedFolderUrl(sharedFolderUrl);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Shared folder URL updated successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error updating folder URL: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.link),
-                  label: const Text('Connect to Shared Folder'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
+
               const SizedBox(height: 12),
 
-              // Access Control Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    // For now, show demo access control
-                    showDialog(
-                      context: context,
-                      builder: (context) => const AccessControlDemoDialog(),
-                    );
-                  },
-                  icon: const Icon(Icons.people),
-                  label: const Text('Manage Access Control'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+
 
               // Action Buttons
               Row(
@@ -909,16 +855,37 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Apply settings
+                                          onPressed: () async {
+                      // Save shared folder URL if provided
+                      if (sharedFolderUrl.isNotEmpty && _folderConfigService != null) {
+                        try {
+                          await _folderConfigService!.setSharedFolderUrl(sharedFolderUrl);
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Settings saved to Google Drive!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          print('Error saving folder URL: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error saving: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      } else {
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Settings applied!'),
-                            backgroundColor: Colors.green,
+                            content: Text('Please sign in to Google Drive first'),
+                            backgroundColor: Colors.orange,
                           ),
                         );
-                      },
+                      }
+                    },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
