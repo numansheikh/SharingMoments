@@ -48,9 +48,9 @@ class AuthDialog extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  AuthService.startAuthFlow();
+                  await AuthService.startAuthFlow();
                   if (onAuthSuccess != null) {
                     onAuthSuccess!();
                   }

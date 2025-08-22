@@ -37,7 +37,16 @@ This app is designed to run on all major platforms:
    cd sharing_moments
    ```
 
-2. **Install dependencies:**
+2. **Set up Google OAuth credentials:**
+   ```bash
+   # Copy the template file
+   cp cred.txt.template cred.txt
+   
+   # Edit cred.txt with your actual Google OAuth credentials
+   # Get them from: https://console.cloud.google.com/apis/credentials
+   ```
+
+3. **Install dependencies:**
    ```bash
    flutter pub get
    ```
