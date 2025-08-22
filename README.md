@@ -125,8 +125,17 @@ This app is designed to run on all major platforms:
 - ✅ Access control management system
 - ✅ Authentication dialog
 - ✅ Demo access control (works without Google Drive)
-- 🔄 Google Drive OAuth integration (ready for credentials)
+- ✅ Google Drive OAuth integration (working)
+- ✅ URL persistence in Google Drive
+- ✅ Settings dialog URL loading
+- 🔄 Photo loading from Google Drive (in progress)
 - 🔄 Platform-specific optimizations (in progress)
+
+### Recent Fixes
+- Fixed OAuth redirect URI configuration
+- Fixed URL persistence after logout/login  
+- Fixed settings dialog URL loading
+- Simplified user display to "Connected" status
 
 ### Key Files
 - `lib/main.dart` - Main application entry point

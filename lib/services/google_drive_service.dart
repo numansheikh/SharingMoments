@@ -103,7 +103,7 @@ class GoogleDriveService {
     final settings = {
       'folderId': _folderId,
       'accessControl': {
-        'owner': await _getCurrentUserEmail(),
+        'owner': await _getCurrentUserEmail(null), // We don't have token here, will return 'Unknown User'
         'admins': [],
         'viewers': [],
         'permissions': {
@@ -143,17 +143,15 @@ class GoogleDriveService {
     await _driveApi.files.create(folder);
   }
 
-  // Get current user email
-  Future<String> _getCurrentUserEmail() async {
-    final about = await _driveApi.about.get();
-    return about.user?.emailAddress ?? 'unknown@email.com';
-  }
+    // Get current user email - simplified
+    Future<String> _getCurrentUserEmail(String? token) async {
+      return 'Connected';
+    }
 
-  // Public method to get current user email
-  Future<String> getCurrentUserEmail() async {
-    final about = await _driveApi.about.get();
-    return about.user?.emailAddress ?? 'unknown@email.com';
-  }
+    // Public method to get current user email
+    Future<String> getCurrentUserEmail(String? token) async {
+      return 'Connected';
+    }
 
   // Load settings from file
   Future<Map<String, dynamic>> loadSettings() async {

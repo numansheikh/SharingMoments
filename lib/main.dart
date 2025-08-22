@@ -138,6 +138,9 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
       await _driveService!.initialize(token, expiry);
       await _folderConfigService!.initialize(token, expiry);
       
+      print('Drive service initialized: ${_driveService != null}');
+      print('Folder config service initialized: ${_folderConfigService != null}');
+      
       await _loadPhotosFromDrive();
     }
   }
@@ -218,7 +221,7 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return const SettingsDialog();
+        return SettingsDialog(folderConfigService: _folderConfigService);
       },
     );
   }
@@ -248,7 +251,8 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
   Future<String> _getActualUserEmail() async {
     if (_driveService != null) {
       try {
-        return await _driveService!.getCurrentUserEmail();
+        final token = AuthService.getStoredToken();
+        return await _driveService!.getCurrentUserEmail(token);
       } catch (e) {
         print('Error getting user email: $e');
         return 'Error loading email';
@@ -473,14 +477,15 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
                         ),
                         tooltip: isAuthenticated ? 'Connected to Google Drive' : 'Connect to Google Drive',
                       ),
-                      IconButton(
-                        onPressed: _showSettingsDialog,
-                        icon: const Icon(
-                          Icons.settings,
-                          color: Colors.white,
-                          size: 30,
+                      if (isAuthenticated)
+                        IconButton(
+                          onPressed: _showSettingsDialog,
+                          icon: const Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                            size: 30,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ],
@@ -584,7 +589,9 @@ class _SlideshowScreenState extends State<SlideshowScreen> {
 }
 
 class SettingsDialog extends StatefulWidget {
-  const SettingsDialog({super.key});
+  final FolderConfigService? folderConfigService;
+  
+  const SettingsDialog({super.key, this.folderConfigService});
 
   @override
   State<SettingsDialog> createState() => _SettingsDialogState();
@@ -596,26 +603,47 @@ class _SettingsDialogState extends State<SettingsDialog> {
   bool showIndicators = true;
   String sharedFolderUrl = '';
   FolderConfigService? _folderConfigService;
+  late TextEditingController _urlController;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentFolderName();
+    _urlController = TextEditingController();
+    // Load credentials after a short delay to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCurrentFolderName();
+    });
+  }
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCurrentFolderName() async {
-    // Get the folder config service from the parent widget
-    final parentState = context.findAncestorStateOfType<_SlideshowScreenState>();
-    if (parentState?._folderConfigService != null) {
-      _folderConfigService = parentState!._folderConfigService;
+    print('Loading folder configuration...');
+    
+    // Use the passed folder config service
+    _folderConfigService = widget.folderConfigService;
+    print('Folder config service: ${_folderConfigService != null}');
+    
+    if (_folderConfigService != null) {
       try {
         final folderUrl = await _folderConfigService!.getSharedFolderUrl();
-        setState(() {
-          sharedFolderUrl = folderUrl;
-        });
+        print('Loaded folder URL: $folderUrl');
+        if (mounted) {
+          setState(() {
+            sharedFolderUrl = folderUrl;
+            _urlController.text = folderUrl;
+          });
+          print('Updated state - sharedFolderUrl: $sharedFolderUrl, controller text: ${_urlController.text}');
+        }
       } catch (e) {
         print('Error loading folder configuration: $e');
       }
+    } else {
+      print('Folder config service is null');
     }
   }
 
@@ -774,6 +802,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
 
               // Shared Folder URL Input
               TextField(
+                controller: _urlController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Google Drive Folder URL',
@@ -856,32 +885,51 @@ class _SettingsDialogState extends State<SettingsDialog> {
                   Expanded(
                     child: ElevatedButton(
                                           onPressed: () async {
-                      // Save shared folder URL if provided
-                      if (sharedFolderUrl.isNotEmpty && _folderConfigService != null) {
-                        try {
-                          await _folderConfigService!.setSharedFolderUrl(sharedFolderUrl);
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Settings saved to Google Drive!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        } catch (e) {
-                          print('Error saving folder URL: $e');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error saving: $e'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      } else {
+                      // Check if user is signed in first
+                      if (_folderConfigService == null) {
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Please sign in to Google Drive first'),
                             backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      // Check if URL is provided
+                      final urlToSave = _urlController.text.trim();
+                      if (urlToSave.isEmpty) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a shared folder URL'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+                      
+                      // Save the URL
+                      try {
+                        print('=== SAVING URL ===');
+                        print('URL to save: "$urlToSave"');
+                        await _folderConfigService!.setSharedFolderUrl(urlToSave);
+                        print('URL saved successfully');
+                        
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Settings saved to Google Drive!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } catch (e) {
+                        print('Error saving folder URL: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error saving: $e'),
+                            backgroundColor: Colors.red,
                           ),
                         );
                       }

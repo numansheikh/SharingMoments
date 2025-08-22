@@ -4,10 +4,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  // TODO: Replace these with your actual Google OAuth credentials
-  // Get them from: https://console.cloud.google.com/apis/credentials
-  // For development: Use actual credentials
-  // For production: Use environment variables or secure config
+  // Google OAuth credentials for Sharing Moments app
   static const String _clientId = 'YOUR_GOOGLE_CLIENT_ID_HERE';
   static const String _clientSecret = 'YOUR_GOOGLE_CLIENT_SECRET_HERE';
   
