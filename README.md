@@ -1,4 +1,6 @@
-# Sharing Moments - Cross-Platform Slideshow App
+# Sharing Moments - Cross-Platform Photo Slideshow App
+
+**Status: Migrating from Flutter to React Native for better Google Drive integration and cross-platform support.**
 
 A beautiful, cross-platform slideshow application built with Flutter that displays photos with Google Drive integration.
 
@@ -113,23 +115,24 @@ This app is designed to run on all major platforms:
 
 ## 🛠️ Development Notes
 
-### Current Status
-- ✅ Basic slideshow functionality
-- ✅ Cross-platform UI framework
-- ✅ Sample photo integration (gradient placeholders)
-- ✅ Play/pause controls
-- ✅ Navigation buttons
-- ✅ Photo indicators
-- ✅ Settings dialog with blue theme
-- ✅ Google Drive service implementation
-- ✅ Access control management system
-- ✅ Authentication dialog
-- ✅ Demo access control (works without Google Drive)
-- ✅ Google Drive OAuth integration (working)
-- ✅ URL persistence in Google Drive
-- ✅ Settings dialog URL loading
-- 🔄 Photo loading from Google Drive (in progress)
-- 🔄 Platform-specific optimizations (in progress)
+### Migration Status
+- 🔄 **Migrating from Flutter to React Native**
+- ❌ Flutter version has Google Drive compatibility issues
+- ✅ React Native will provide better cross-platform support
+- ✅ Same codebase for iOS, Android, Web, and TV
+
+### Why React Native?
+- **Better Google APIs support** - More mature libraries
+- **Easier debugging** - React DevTools, better error handling
+- **Faster development** - Hot reload, better state management
+- **Single codebase** - iOS, Android, Web, TV from same code
+- **More examples** - Better Google Drive integration examples online
+
+### Flutter Version Issues (Resolved)
+- Multiple config file creation in Google Drive
+- OAuth token parsing problems
+- URL persistence failures
+- Complex state management debugging
 
 ### Recent Fixes
 - Fixed OAuth redirect URI configuration
@@ -144,11 +147,18 @@ This app is designed to run on all major platforms:
 - `ios/` - iOS-specific configurations
 - `web/` - Web-specific configurations
 
-### Dependencies
+### Dependencies (Flutter Version - Being Replaced)
 - `flutter` - Core Flutter framework
 - `googleapis` - Google Drive API integration
 - `googleapis_auth` - OAuth authentication
 - `http` - HTTP requests for API calls
+
+### Planned React Native Dependencies
+- `react-native` - Core React Native framework
+- `@react-native-google-signin/google-signin` - Google OAuth
+- `googleapis` - Google Drive API integration
+- `@react-native-async-storage/async-storage` - Local storage
+- `react-native-web` - Web platform support
 
 ## ☁️ Google Drive Integration
 

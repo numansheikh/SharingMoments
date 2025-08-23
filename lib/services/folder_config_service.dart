@@ -5,7 +5,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 
 class FolderConfigService {
-  static const String _configFileName = 'folder_config.json';
+  static const String _configFileName = 'sharing_moments_config.json';
   
   late drive.DriveApi _driveApi;
   Map<String, dynamic>? _config;
@@ -53,13 +53,23 @@ class FolderConfigService {
   // Find existing config file
   Future<drive.File?> _findConfigFile() async {
     try {
+      print('=== _findConfigFile called ===');
       final response = await _driveApi.files.list(
         q: "name='$_configFileName' and trashed=false",
         spaces: 'drive',
       );
       
+      print('Found ${response.files?.length ?? 0} config files');
+      if (response.files != null && response.files!.isNotEmpty) {
+        for (int i = 0; i < response.files!.length; i++) {
+          final file = response.files![i];
+          print('File $i: ID=${file.id}, Name=${file.name}, Created=${file.createdTime}');
+        }
+      }
+      
       return response.files?.isNotEmpty == true ? response.files!.first : null;
     } catch (e) {
+      print('Error in _findConfigFile: $e');
       return null;
     }
   }
@@ -136,21 +146,40 @@ class FolderConfigService {
 
   // Update config file
   Future<void> _updateConfigFile(Map<String, dynamic> newConfig) async {
+    print('=== _updateConfigFile called ===');
+    print('New config: ${json.encode(newConfig)}');
+    
     final configFile = await _findConfigFile();
+    print('Found config file: ${configFile?.id}');
+    
     if (configFile == null) {
+      print('No config file found, creating new one');
       await _createConfigFile();
       return;
     }
 
-    final updatedFile = drive.File()
-      ..name = _configFileName;
+    print('Updating existing config file');
+    
+    // Delete the old file first to prevent multiple versions
+    try {
+      await _driveApi.files.delete(configFile.id!);
+      print('Old config file deleted');
+    } catch (e) {
+      print('Error deleting old file: $e');
+    }
+    
+    // Create a new file with the updated content
+    final newFile = drive.File()
+      ..name = _configFileName
+      ..mimeType = 'application/json';
 
     final media = drive.Media(
       Stream.value(utf8.encode(json.encode(newConfig))),
       json.encode(newConfig).length,
     );
 
-    await _driveApi.files.update(updatedFile, configFile.id!, uploadMedia: media);
+    await _driveApi.files.create(newFile, uploadMedia: media);
+    print('New config file created successfully');
   }
 
   // Add new folder
@@ -205,26 +234,41 @@ class FolderConfigService {
 
   // Set shared folder URL (for master account)
   Future<void> setSharedFolderUrl(String folderUrl) async {
+    print('=== setSharedFolderUrl called ===');
+    print('Input URL: "$folderUrl"');
+    
     final config = await getOrCreateConfig();
+    print('Current config: ${json.encode(config)}');
     
     // Extract folder ID from URL
     final folderId = _extractFolderIdFromUrl(folderUrl);
+    print('Extracted folder ID: "$folderId"');
     
     if (config['folders'] != null && config['folders'].isNotEmpty) {
       config['folders'][0]['sharedFolderUrl'] = folderUrl;
       config['folders'][0]['folderId'] = folderId;
+      print('Updated folders[0]: ${config['folders'][0]}');
     }
     
     await _updateConfigFile(config);
     _config = config;
+    print('Config updated and saved');
   }
 
   // Get shared folder URL
   Future<String> getSharedFolderUrl() async {
+    print('=== getSharedFolderUrl called ===');
     final config = await getOrCreateConfig();
+    print('Raw config from Drive: ${json.encode(config)}');
+    print('Config keys: ${config.keys.toList()}');
     if (config['folders'] != null && config['folders'].isNotEmpty) {
-      return config['folders'][0]['sharedFolderUrl'] ?? '';
+      print('Folders array: ${config['folders']}');
+      print('First folder: ${config['folders'][0]}');
+      final url = config['folders'][0]['sharedFolderUrl'] ?? '';
+      print('Extracted URL: "$url"');
+      return url;
     }
+    print('No folders found in config');
     return '';
   }
 
